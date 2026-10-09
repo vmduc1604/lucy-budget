@@ -1,0 +1,1084 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>🐷 My Money Snapshot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="vendor/chart.umd.js"></script>
+    <style>
+      :root {
+        --bg: #faf8ff;
+        --card: #fff;
+        --ink: #343146;
+        --muted: #77748a;
+        --line: #eeebf3;
+        --income: #56a987;
+        --income-soft: #e7f6ef;
+        --expense: #e98275;
+        --expense-soft: #fff0ed;
+        --net: #9180c8;
+        --net-soft: #f0edfb;
+        --shadow: 0 8px 28px rgba(58, 45, 85, 0.055);
+        --radius: 18px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Nunito", system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .wrap {
+        width: min(1160px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0 28px;
+      }
+      header {
+        margin-bottom: 22px;
+        animation: appear 0.45s ease both;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 4vw, 2.45rem);
+        line-height: 1.15;
+        letter-spacing: -0.04em;
+      }
+      header p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+      .card,
+      .control-bar,
+      .insight,
+      .empty {
+        background: var(--card);
+        border: 1px solid rgba(238, 235, 243, 0.8);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .control-bar {
+        display: flex;
+        align-items: end;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      .field {
+        display: grid;
+        gap: 5px;
+      }
+      .field label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+      input,
+      button {
+        font: inherit;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 11px;
+        padding: 9px 11px;
+      }
+      input[type="date"] {
+        min-width: 145px;
+      }
+      input[type="number"] {
+        width: 135px;
+      }
+      button {
+        cursor: pointer;
+        font-weight: 800;
+        transition:
+          transform 0.16s,
+          box-shadow 0.16s;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(58, 45, 85, 0.1);
+      }
+      .quick {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .quick button {
+        padding: 9px 12px;
+        background: #f7f5fb;
+      }
+      .file-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 11px;
+        padding: 9px 12px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      #csvFile {
+        display: none;
+      }
+      .rate-note {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+      .scoreboard {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-bottom: 16px;
+      }
+      .score {
+        padding: 19px 20px;
+        min-height: 142px;
+        animation: appear 0.5s ease both;
+      }
+      .score h2 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .score .value {
+        margin: 7px 0 5px;
+        font-size: clamp(1.55rem, 3vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+      }
+      .score p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .income .value {
+        color: var(--income);
+      }
+      .expense .value {
+        color: var(--expense);
+      }
+      .net .value {
+        color: var(--net);
+      }
+      .net.negative .value {
+        color: var(--expense);
+      }
+      .insights {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 18px;
+      }
+      .insight {
+        padding: 16px 18px;
+      }
+      .insight h3 {
+        margin: 0 0 5px;
+        font-size: 0.95rem;
+      }
+      .insight p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .charts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .chart-card {
+        padding: 19px;
+        min-width: 0;
+      }
+      .chart-card.wide {
+        grid-column: 1 / -1;
+      }
+      .chart-card h2 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+      .chart-card .sub {
+        margin: 4px 0 13px;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .chart-wrap {
+        position: relative;
+        height: 260px;
+      }
+      .chart-wrap.short {
+        height: 230px;
+      }
+      .toggle {
+        display: inline-flex;
+        gap: 5px;
+        margin: 0 0 10px;
+        padding: 4px;
+        background: #f6f4fa;
+        border-radius: 10px;
+      }
+      .toggle button {
+        border: 0;
+        padding: 6px 10px;
+        background: transparent;
+        font-size: 0.82rem;
+      }
+      .toggle button.active {
+        color: #fff;
+        background: var(--net);
+        box-shadow: none;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.87rem;
+      }
+      th,
+      td {
+        padding: 10px 8px;
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        color: var(--muted);
+        font-size: 0.76rem;
+      }
+      td.amount {
+        text-align: right;
+        color: var(--expense);
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .empty {
+        padding: 28px 18px;
+        margin: 0 0 18px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty strong {
+        display: block;
+        color: var(--ink);
+        font-size: 1.1rem;
+      }
+      .footnotes {
+        color: var(--muted);
+        font-size: 0.76rem;
+        margin: 16px 2px 0;
+      }
+      footer {
+        margin-top: 20px;
+        color: var(--muted);
+        font-size: 0.77rem;
+        text-align: center;
+      }
+      @keyframes appear {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (max-width: 850px) {
+        .scoreboard {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .insights {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 600px) {
+        .wrap {
+          width: min(100% - 22px, 1160px);
+          padding-top: 24px;
+        }
+        .control-bar {
+          align-items: stretch;
+        }
+        .field {
+          flex: 1 1 140px;
+        }
+        .quick {
+          width: 100%;
+        }
+        .quick button {
+          flex: 1;
+        }
+        .charts,
+        .insights {
+          grid-template-columns: 1fr;
+        }
+        .chart-card.wide {
+          grid-column: auto;
+        }
+        .score {
+          padding: 16px;
+          min-height: 132px;
+        }
+        .score .value {
+          font-size: clamp(1.3rem, 7vw, 1.75rem);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <h1>🐷 My Money Snapshot</h1>
+        <p id="subtitle">A friendly look at where your money goes.</p>
+      </header>
+
+      <section class="control-bar" aria-label="Dashboard controls">
+        <div class="field">
+          <label for="startDate">From</label>
+          <input id="startDate" type="date" />
+        </div>
+        <div class="field">
+          <label for="endDate">To</label>
+          <input id="endDate" type="date" />
+        </div>
+        <div class="quick" aria-label="Quick date ranges">
+          <button type="button" data-range="all">All time</button>
+          <button type="button" data-range="7">Last 7 days</button>
+          <button type="button" data-range="30">Last 30 days</button>
+          <button type="button" data-range="month">This month</button>
+        </div>
+        <div class="field">
+          <label for="rate">VND for $1</label>
+          <input id="rate" type="number" min="1" step="100" value="26000" />
+        </div>
+        <label class="file-label" for="csvFile">📄 Load CSV</label>
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <span class="rate-note" id="rateNote">VND converted at 26,000/USD</span>
+      </section>
+
+      <section class="grid scoreboard" aria-label="Money summary">
+        <article class="card score income">
+          <h2>💰 Total Income</h2>
+          <div class="value" id="incomeTotal">$0.00</div>
+          <p>Money that came in during this period.</p>
+        </article>
+        <article class="card score expense">
+          <h2>🛍️ Total Expense</h2>
+          <div class="value" id="expenseTotal">$0.00</div>
+          <p>Money you spent during this period.</p>
+        </article>
+        <article class="card score net" id="netCard">
+          <h2>✨ Net</h2>
+          <div class="value" id="netTotal">$0.00</div>
+          <p>What is left after your spending.</p>
+        </article>
+        <article class="card score">
+          <h2>🎯 Savings rate</h2>
+          <div class="value" id="savingsRate">n/a</div>
+          <p>How much of your income stayed with you.</p>
+        </article>
+      </section>
+
+      <div id="emptyState" class="empty" hidden>
+        <strong>No transactions in this range 🌱</strong>Try a wider date range
+        or load a CSV file.
+      </div>
+      <section
+        class="grid insights"
+        id="insights"
+        aria-label="Money insights"
+      ></section>
+
+      <section class="grid charts" id="charts">
+        <article class="card chart-card wide">
+          <h2>📊 Income and spending over time</h2>
+          <p class="sub">
+            Look for weeks or months when your spending was higher.
+          </p>
+          <div class="toggle" aria-label="Timeline grouping">
+            <button type="button" data-period="weekly" class="active">
+              Weekly
+            </button>
+            <button type="button" data-period="monthly">Monthly</button>
+          </div>
+          <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+        </article>
+        <article class="card chart-card wide">
+          <h2>🌱 Am I ahead or behind over time?</h2>
+          <p class="sub">
+            This line adds up income minus spending as days pass.
+          </p>
+          <div class="chart-wrap short">
+            <canvas id="cumulativeChart"></canvas>
+          </div>
+        </article>
+        <article class="card chart-card">
+          <h2>🍰 Spending by category</h2>
+          <p class="sub">See which categories take the biggest pieces.</p>
+          <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+        </article>
+        <article class="card chart-card">
+          <h2>🏅 Top 5 spending categories</h2>
+          <p class="sub">These are the categories with the highest totals.</p>
+          <div class="chart-wrap"><canvas id="topChart"></canvas></div>
+        </article>
+        <article class="card chart-card wide">
+          <h2>🧾 Biggest expenses</h2>
+          <p class="sub">
+            Your five largest individual expenses in this date range.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th style="text-align: right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="biggestRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <p class="footnotes">
+        <span id="missingNote"></span> VND converted at
+        <span id="rateFootnote">26,000</span>/USD. Transfers between my accounts
+        are not counted.
+      </p>
+      <footer id="footer">Load a CSV file to see your money snapshot.</footer>
+    </main>
+
+    <script>
+      // Dashboard settings and bundled transaction data.
+      const SETTINGS = {
+        exchangeRate: 26000,
+        colors: {
+          income: "#56a987",
+          expense: "#e98275",
+          net: "#9180c8",
+          neutral: "#c9c4d5",
+        },
+      };
+      const BUNDLED_CSV =
+        "datasource/transactions_2026-09-05_to_2026-10-09.csv";
+
+      let transactions = [];
+      let timelinePeriod = "weekly";
+      const charts = {};
+
+      const $ = (selector) => document.querySelector(selector);
+      const money = (value) =>
+        new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+        }).format(Number.isFinite(value) ? value : 0);
+      const number = (value) => new Intl.NumberFormat("en-US").format(value);
+      const dateFrom = (s) => new Date(`${s}T00:00:00`);
+      const iso = (d) => {
+        const y = d.getFullYear(),
+          m = String(d.getMonth() + 1).padStart(2, "0"),
+          day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+
+      function normalizeRow(row) {
+        const amountText = String(row.Amount ?? row.amount ?? "").trim();
+        const amount =
+          amountText === "" ? null : Number(amountText.replace(/[$,\s]/g, ""));
+        return {
+          date: String(row.Date ?? row.date ?? "").trim(),
+          type: String(row.Type ?? row.type ?? "").trim(),
+          category:
+            String(row.Category ?? row.category ?? "Uncategorized").trim() ||
+            "Uncategorized",
+          bank: String(row.Bank ?? row.bank ?? "").trim(),
+          currency: String(row.Currency ?? row.currency ?? "USD")
+            .trim()
+            .toUpperCase(),
+          amount: Number.isFinite(amount) ? amount : null,
+          description: String(row.Description ?? row.description ?? "").trim(),
+          notes: String(row.Notes ?? row.notes ?? "").trim(),
+        };
+      }
+
+      // CSV parser supports quoted fields, commas inside quotes, and escaped quotes.
+      function parseCSV(text) {
+        const rows = [];
+        let row = [],
+          value = "",
+          quoted = false;
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i];
+          if (quoted) {
+            if (c === '"' && text[i + 1] === '"') {
+              value += '"';
+              i++;
+            } else if (c === '"') quoted = false;
+            else value += c;
+          } else if (c === '"') quoted = true;
+          else if (c === ",") {
+            row.push(value);
+            value = "";
+          } else if (c === "\n") {
+            row.push(value);
+            rows.push(row);
+            row = [];
+            value = "";
+          } else if (c !== "\r") value += c;
+        }
+        row.push(value);
+        if (row.some((cell) => cell.trim() !== "")) rows.push(row);
+        if (!rows.length) return [];
+        const headers = rows
+          .shift()
+          .map((h) => h.replace(/^\uFEFF/, "").trim());
+        return rows.map((cells) =>
+          Object.fromEntries(
+            headers.map((header, i) => [header, cells[i] ?? ""]),
+          ),
+        );
+      }
+
+      function validDate(t) {
+        return (
+          /^\d{4}-\d{2}-\d{2}$/.test(t.date) &&
+          !Number.isNaN(dateFrom(t.date).getTime())
+        );
+      }
+      function converted(t) {
+        const amount = Math.abs(t.amount || 0);
+        return t.currency === "VND"
+          ? amount /
+              Math.max(1, Number($("#rate").value) || SETTINGS.exchangeRate)
+          : amount;
+      }
+      function includedRows() {
+        const start = $("#startDate").value,
+          end = $("#endDate").value;
+        return transactions.filter(
+          (t) =>
+            validDate(t) &&
+            t.amount !== null &&
+            t.type.toLowerCase() !== "transfer" &&
+            (!start || t.date >= start) &&
+            (!end || t.date <= end),
+        );
+      }
+      function destroyCharts() {
+        Object.values(charts).forEach((chart) => chart?.destroy());
+      }
+      function chartOptions(extra = {}) {
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              labels: {
+                usePointStyle: true,
+                boxWidth: 8,
+                font: { family: "Nunito" },
+              },
+            },
+            tooltip: {
+              backgroundColor: "#343146",
+              padding: 10,
+              cornerRadius: 10,
+              titleFont: { family: "Nunito", weight: "800" },
+              bodyFont: { family: "Nunito" },
+              callbacks: {
+                label: (ctx) =>
+                  `${ctx.dataset.label ? ctx.dataset.label + ": " : ""}${money(ctx.parsed.y ?? ctx.parsed)}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: "#77748a", font: { family: "Nunito" } },
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: "#f0edf4" },
+              ticks: {
+                color: "#77748a",
+                font: { family: "Nunito" },
+                callback: (v) => money(v),
+              },
+            },
+          },
+          ...extra,
+        };
+      }
+
+      function mondayOf(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        const day = (d.getDay() + 6) % 7;
+        d.setDate(d.getDate() - day);
+        return d;
+      }
+      function weekLabel(start) {
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        const month = start.toLocaleString("en-US", { month: "short" });
+        const endMonth = end.toLocaleString("en-US", { month: "short" });
+        return month === endMonth
+          ? `${month} ${start.getDate()}–${end.getDate()}`
+          : `${month} ${start.getDate()}–${endMonth} ${end.getDate()}`;
+      }
+      function bucketKey(t) {
+        const d = dateFrom(t.date);
+        if (timelinePeriod === "monthly")
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        return iso(mondayOf(d));
+      }
+      function bucketLabel(key) {
+        const d = dateFrom(
+          `${key}${timelinePeriod === "monthly" ? "-01" : ""}`,
+        );
+        return timelinePeriod === "monthly"
+          ? d.toLocaleString("en-US", { month: "short", year: "2-digit" })
+          : weekLabel(d);
+      }
+
+      function buildInsights(rows, expenses, incomeTotal, expenseTotal) {
+        const out = [];
+        const categories = new Map();
+        expenses.forEach((t) =>
+          categories.set(
+            t.category,
+            (categories.get(t.category) || 0) + converted(t),
+          ),
+        );
+        if (categories.size) {
+          const [name, total] = [...categories.entries()].sort(
+            (a, b) => b[1] - a[1],
+          )[0];
+          out.push([
+            "🧺",
+            "Your biggest category",
+            `${name} is ${Math.round((total / expenseTotal) * 100)}% of spending (${money(total)}).`,
+          ]);
+        }
+        if (expenses.length) {
+          const perDay = new Map();
+          expenses.forEach((t) =>
+            perDay.set(t.date, (perDay.get(t.date) || 0) + converted(t)),
+          );
+          const [day, high] = [...perDay.entries()].sort(
+            (a, b) => b[1] - a[1],
+          )[0];
+          const totalDays = Math.max(
+            1,
+            Math.ceil(
+              (dateFrom($("#endDate").value || day) -
+                dateFrom($("#startDate").value || day)) /
+                86400000,
+            ) + 1,
+          );
+          out.push([
+            "📅",
+            "Your daily spending",
+            `About ${money(expenseTotal / totalDays)} per day; your highest-spending day was ${day} (${money(high)}).`,
+          ]);
+          const biggest = [...expenses].sort(
+            (a, b) => converted(b) - converted(a),
+          )[0];
+          out.push([
+            "🛍️",
+            "One big purchase",
+            `${biggest.description || biggest.category} was your largest expense at ${money(converted(biggest))}.`,
+          ]);
+          const rides = expenses.filter((t) =>
+            /uber|lyft/i.test(`${t.description} ${t.category}`),
+          );
+          if (rides.length)
+            out.push([
+              "🚗",
+              "Small rides add up",
+              `${rides.length} Uber/Lyft ride${rides.length === 1 ? "" : "s"} added up to ${money(rides.reduce((s, t) => s + converted(t), 0))}.`,
+            ]);
+        }
+        if (incomeTotal > 0)
+          out.push([
+            "✨",
+            "Money left over",
+            `${money(incomeTotal - expenseTotal)} remained after spending, or ${Math.round(((incomeTotal - expenseTotal) / incomeTotal) * 100)}% of income.`,
+          ]);
+        return out.slice(0, 5);
+      }
+
+      function render() {
+        const rate = Math.max(
+          1,
+          Number($("#rate").value) || SETTINGS.exchangeRate,
+        );
+        $("#rateNote").textContent = `VND converted at ${number(rate)}/USD`;
+        $("#rateFootnote").textContent = number(rate);
+
+        const rows = includedRows();
+        const expenses = rows.filter((t) => t.type.toLowerCase() === "expense");
+        const incomes = rows.filter((t) => t.type.toLowerCase() === "income");
+        const incomeTotal = incomes.reduce((s, t) => s + converted(t), 0);
+        const expenseTotal = expenses.reduce((s, t) => s + converted(t), 0);
+        const net = incomeTotal - expenseTotal;
+        $("#incomeTotal").textContent = money(incomeTotal);
+        $("#expenseTotal").textContent = money(expenseTotal);
+        $("#netTotal").textContent = money(net);
+        $("#netCard").classList.toggle("negative", net < 0);
+        $("#savingsRate").textContent = incomeTotal
+          ? `${Math.round((net / incomeTotal) * 100)}%`
+          : "n/a";
+
+        const start = $("#startDate").value,
+          end = $("#endDate").value;
+        $("#subtitle").textContent =
+          start && end
+            ? `${start} to ${end}`
+            : "Choose a date range to explore your money.";
+        const missing = transactions.filter(
+          (t) =>
+            validDate(t) &&
+            t.amount === null &&
+            t.type.toLowerCase() !== "transfer",
+        ).length;
+        $("#missingNote").textContent = missing
+          ? `${missing} transaction${missing === 1 ? "" : "s"} ${missing === 1 ? "has" : "have"} no amount and ${missing === 1 ? "was" : "were"} skipped.`
+          : "";
+
+        const isEmpty = rows.length === 0;
+        $("#emptyState").hidden = !isEmpty;
+        $("#charts").hidden = isEmpty;
+        $("#insights").hidden = isEmpty;
+
+        const dates = transactions.filter((t) => validDate(t));
+        const usedDates = rows.map((t) => t.date).sort();
+        const rangeText = usedDates.length
+          ? `${usedDates[0]} to ${usedDates[usedDates.length - 1]}`
+          : "no transactions";
+        $("#footer").textContent =
+          `${rangeText} · ${rows.length} transaction${rows.length === 1 ? "" : "s"} used (transfers excluded).`;
+
+        if (isEmpty) {
+          destroyCharts();
+          return;
+        }
+
+        $("#insights").innerHTML = buildInsights(
+          rows,
+          expenses,
+          incomeTotal,
+          expenseTotal,
+        )
+          .map(
+            ([emoji, title, text]) =>
+              `<article class="insight"><h3>${emoji} ${escapeHTML(title)}</h3><p>${escapeHTML(text)}</p></article>`,
+          )
+          .join("");
+
+        const buckets = new Map();
+        rows.forEach((t) => {
+          const key = bucketKey(t);
+          if (!buckets.has(key)) buckets.set(key, { income: 0, expense: 0 });
+          const row = buckets.get(key);
+          if (t.type.toLowerCase() === "income") row.income += converted(t);
+          if (t.type.toLowerCase() === "expense") row.expense += converted(t);
+        });
+        const keys = [...buckets.keys()].sort();
+        const labels = keys.map(bucketLabel);
+        const incomeValues = keys.map((k) => buckets.get(k).income);
+        const expenseValues = keys.map((k) => buckets.get(k).expense);
+
+        const days = new Map();
+        rows.forEach((t) =>
+          days.set(
+            t.date,
+            (days.get(t.date) || 0) +
+              (t.type.toLowerCase() === "income"
+                ? converted(t)
+                : -converted(t)),
+          ),
+        );
+        let running = 0;
+        const cumulativeLabels = [...days.keys()].sort();
+        const cumulativeValues = cumulativeLabels.map(
+          (day) => (running += days.get(day)),
+        );
+
+        const categoryTotals = new Map();
+        expenses.forEach((t) =>
+          categoryTotals.set(
+            t.category,
+            (categoryTotals.get(t.category) || 0) + converted(t),
+          ),
+        );
+        const cats = [...categoryTotals.entries()].sort((a, b) => b[1] - a[1]);
+        const topCats = cats.slice(0, 5);
+
+        $("#biggestRows").innerHTML = [...expenses]
+          .sort((a, b) => converted(b) - converted(a))
+          .slice(0, 5)
+          .map(
+            (t) =>
+              `<tr><td>${escapeHTML(t.date)}</td><td>${escapeHTML(t.description || "—")}</td><td>${escapeHTML(t.category)}</td><td class="amount">${money(converted(t))}</td></tr>`,
+          )
+          .join("");
+
+        if (typeof Chart !== "function") {
+          document.querySelectorAll("#charts .chart-wrap").forEach((wrap) => {
+            wrap.closest(".chart-card").hidden = true;
+          });
+          $("#footer").textContent +=
+            " Charts unavailable because Chart.js could not be loaded.";
+          return;
+        }
+
+        const axisOptions = chartOptions();
+        destroyCharts();
+        charts.timeline = new Chart($("#timelineChart"), {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Income",
+                data: incomeValues,
+                backgroundColor: SETTINGS.colors.income,
+                borderRadius: 6,
+              },
+              {
+                label: "Expense",
+                data: expenseValues,
+                backgroundColor: SETTINGS.colors.expense,
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: axisOptions,
+        });
+        charts.cumulative = new Chart($("#cumulativeChart"), {
+          type: "line",
+          data: {
+            labels: cumulativeLabels,
+            datasets: [
+              {
+                label: "Net so far",
+                data: cumulativeValues,
+                borderColor: SETTINGS.colors.net,
+                backgroundColor: "rgba(145,128,200,.12)",
+                fill: true,
+                tension: 0.28,
+                pointRadius: 2,
+              },
+            ],
+          },
+          options: chartOptions({
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: "#77748a", maxTicksLimit: 8 },
+              },
+              y: {
+                grid: {
+                  color: (ctx) =>
+                    ctx.tick.value === 0 ? "#aaa3b5" : "#f0edf4",
+                  lineWidth: (ctx) => (ctx.tick.value === 0 ? 1.5 : 1),
+                },
+                ticks: { color: "#77748a", callback: (v) => money(v) },
+              },
+            },
+          }),
+        });
+        const palette = [
+          "#e98275",
+          "#f4b28f",
+          "#9180c8",
+          "#70b99a",
+          "#e4c66b",
+          "#8fb8d8",
+          "#c58cb8",
+        ];
+        charts.donut = new Chart($("#donutChart"), {
+          type: "doughnut",
+          data: {
+            labels: cats.map(
+              ([name, total]) =>
+                `${name} · ${Math.round((total / expenseTotal) * 100)}% · ${money(total)}`,
+            ),
+            datasets: [
+              {
+                data: cats.map((x) => x[1]),
+                backgroundColor: cats.map(
+                  (_, i) => palette[i % palette.length],
+                ),
+                borderWidth: 3,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "62%",
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  usePointStyle: true,
+                  boxWidth: 8,
+                  padding: 12,
+                  font: { family: "Nunito" },
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  label: (c) =>
+                    `${money(c.parsed)} (${expenseTotal ? Math.round((c.parsed / expenseTotal) * 100) : 0}%)`,
+                },
+              },
+            },
+          },
+        });
+        charts.top = new Chart($("#topChart"), {
+          type: "bar",
+          data: {
+            labels: topCats.map(([name]) => name),
+            datasets: [
+              {
+                label: "Spent",
+                data: topCats.map(([, v]) => v),
+                backgroundColor: SETTINGS.colors.expense,
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: chartOptions({
+            indexAxis: "y",
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (c) => money(c.parsed.x) } },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: { color: "#f0edf4" },
+                ticks: { callback: (v) => money(v) },
+              },
+              y: { grid: { display: false } },
+            },
+          }),
+        });
+      }
+
+      function escapeHTML(value) {
+        return String(value).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      }
+      function setFullRange() {
+        const valid = transactions.filter((t) => validDate(t));
+        if (!valid.length) {
+          $("#startDate").value = "";
+          $("#endDate").value = "";
+          return;
+        }
+        const dates = valid.map((t) => t.date).sort();
+        $("#startDate").value = dates[0];
+        $("#endDate").value = dates[dates.length - 1];
+      }
+
+      async function loadBundledCSV() {
+        let loaded;
+        try {
+          const response = await fetch(BUNDLED_CSV);
+          if (!response.ok)
+            throw new Error(`CSV request failed: ${response.status}`);
+          loaded = parseCSV(await response.text()).map(normalizeRow);
+          if (!loaded.length) throw new Error("CSV contains no transactions");
+        } catch (error) {
+          $("#footer").textContent =
+            "Could not load the bundled CSV. Open this page from a local web server or use Load CSV.";
+          return;
+        }
+        transactions = loaded;
+        setFullRange();
+        render();
+      }
+
+      $("#rate").addEventListener("input", render);
+      $("#startDate").addEventListener("change", render);
+      $("#endDate").addEventListener("change", render);
+      document.querySelectorAll("[data-range]").forEach((button) =>
+        button.addEventListener("click", () => {
+          const range = button.dataset.range;
+          if (range === "all") setFullRange();
+          else {
+            const today = transactions
+              .filter((t) => validDate(t))
+              .map((t) => t.date)
+              .sort()
+              .at(-1);
+            const end = today ? dateFrom(today) : new Date();
+            let start = new Date(end);
+            if (range === "month")
+              start = new Date(end.getFullYear(), end.getMonth(), 1);
+            else start.setDate(end.getDate() - Number(range) + 1);
+            $("#startDate").value = iso(start);
+            $("#endDate").value = iso(end);
+          }
+          render();
+        }),
+      );
+      document.querySelectorAll("[data-period]").forEach((button) =>
+        button.addEventListener("click", () => {
+          timelinePeriod = button.dataset.period;
+          document
+            .querySelectorAll("[data-period]")
+            .forEach((b) => b.classList.toggle("active", b === button));
+          render();
+        }),
+      );
+      $("#csvFile").addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+          transactions = parseCSV(await file.text()).map(normalizeRow);
+          setFullRange();
+          render();
+        } catch (error) {
+          alert(
+            "That file could not be read as a CSV. Please check its columns and try again.",
+          );
+        }
+        event.target.value = "";
+      });
+
+      render();
+      loadBundledCSV();
+    </script>
+  </body>
+</html>
